@@ -23,6 +23,16 @@ func map<S,T>(f : S -> T)(a : Array<S>) -> Array<T> {
     return result
 }
 
+func filter<S>(f : S -> Bool)(a : Array<S>) -> Array<S> {
+    var result = Array<S>()
+    for (index, value) in enumerate(a) {
+        if f(value) {
+            result.append(value)
+        }
+    }
+    return result
+}
+
 func choose<S,T>(f : S -> T?)(a : Array<S>) -> Array<T> {
     var result = Array<T>()
     for (index, value) in enumerate(a) {
@@ -57,5 +67,63 @@ let m4 = {(s: String) -> String in
     |> choose(s1)
     |> choose(m2("a"))
     |> map(m4)
+
+
+
+/*
+/// Fibonacci Number formula
+let rec fib n =
+match n with
+| 0 | 1 -> n
+| _ -> fib (n - 1) + fib (n - 2)
+
+/// Another approach - a lazy infinite sequence of Fibonacci numbers
+let fibSeq = Seq.unfold (fun (a,b) -> Some(a+b, (b, a+b))) (0,1)
+
+// Print even fibs
+[1 .. 10]
+|> List.map     fib
+|> List.filter  (fun n -> (n % 2) = 0)
+|> printList
+
+// Same thing, using a list expression
+[ for i in 1..10 do
+let r = fib i
+if r % 2 = 0 then yield r ]
+|> printList
+*/
+
+func fib(n : Int) -> Int {
+    if n == 0 || n == 1 {
+        return n
+    }
+    else {
+        return fib(n - 1) + fib(n - 2)
+    }
+}
+
+let output = {(n: Array<Int>) -> () in
+    for (index,value) in enumerate(n) {
+        println("[\(index)] is \(value)")
+    }
+}
+
+
+[1,2,3,4,5,6,7,8,9,10]
+|> map(fib)
+|> filter({$0 % 2 == 0})
+|> output
+
+
+
+
+
+
+
+
+
+
+
+
 
 
