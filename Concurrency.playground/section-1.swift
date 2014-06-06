@@ -1,61 +1,82 @@
-// Playing with Swift and GCD
+//
+//  Async.swift
+//  TestSwiftUI
+//
+//  Created by Plumhead on 06/06/2014.
+//
+// There are many holes in this which will be ironed out over time - put up as a starting point for ideas
+//
 
-import UIKit
 import Foundation
 
-
-//let queue = dispatch_queue_create("com.plumhead",nil)
-
-/*
-func actionHandler1() -> () {
-    let name = "andy"
-    println("[ACTION] action name is \(name)")
-}
-*/
-
-// This simple example doesn't work in the playground - lots of console exception trace - but does work quite happily in the iOS simulator.
-
-/*
-let queue = dispatch_queue_create("com.plumhead",nil)
-func actionFunc() -> () {println("[ACTION] - function executed")}
-let actionBlock = { () -> () in
-    actionFunc()
-    println("[ACTION] - block executed")
-}
-for i in 1..5 {
-    dispatch_async(queue, actionBlock)
-}
-*/
 enum AwaitResult<T> {
     case Success(a : T)
     case Timeout
 }
 
-func await<T>(f : () -> T) -> AwaitResult<T> {
-    var result : AwaitResult<T> = .Timeout
-    let group = dispatch_group_create()
-    dispatch_group_async(group,dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), {
-        println("Task Starting")
+typealias Ctx = dispatch_group_t
+
+
+operator infix ! {associativity left precedence 140}
+func ! <T> (ctx: Ctx,f: () -> T) -> T {
+    var result : (() -> T)?
+    
+    dispatch_group_async(ctx,dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), {
+        println("pre task")
         sleep(5)
-        let r = f()
-        result = AwaitResult.Success(a:r)
-        println("Task Ending")
-        return ()
+        result = {f()}
+        println("post task")
         })
-    dispatch_group_wait(group, DISPATCH_TIME_FOREVER)
-    return result
+    dispatch_group_wait(ctx, DISPATCH_TIME_FOREVER)
+    
+    return result!()
 }
 
-func mytask() -> String {return "Andy Calderbank"}
-let a = mytask()
-
-println("Await is starting")
-let result = await({() -> String in mytask()})
-switch result {
-case let .Success(r) : println("Result returned was \(r)")
-case .Timeout : println("No result returned")
+class Async {
+    
+    class func async<T>(f : Ctx -> T)(ctx: Ctx) -> T {
+        println("Running Async!!!")
+        return f(ctx)
+    }
+    
+    class func RunAsynchronously<T>(f: Ctx -> T) -> AwaitResult<T> {
+        var result : AwaitResult<T> = .Timeout
+        let group = dispatch_group_create()
+        
+        dispatch_group_async(group,dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), {
+            println("RunAsync Starting")
+            sleep(5)
+            let childgroup = dispatch_group_create()
+            let r = f(childgroup)
+            dispatch_group_wait(childgroup, DISPATCH_TIME_FOREVER)
+            result = AwaitResult.Success(a:r)
+            println("RunAsync Ending")
+            })
+        
+        dispatch_group_wait(group, DISPATCH_TIME_FOREVER)
+        
+        return result
+    }
+    
+    class func test() {
+        func f3(name : String) -> Int {return name.lengthOfBytesUsingEncoding(NSASCIIStringEncoding)}
+        
+        let f1 = async {
+            (ctx : Ctx) -> Int in
+            
+            let a = ctx ! {10}
+            let b = ctx ! {20}
+            let c = ctx ! {f3("Andy Calderbank")}
+            
+            println("Finished Running Async Block with result =\(a+b+c)")
+            return a + b + c
+        }
+        
+        let result = Async.RunAsynchronously(f1)
+        
+        switch result {
+        case let .Success(a) : println ("Success with result=\(a)")
+        case .Timeout : println("Timeout")  // NOT IMPLEMENTED YET!
+        }
+    }
 }
-println("Await is finished")
-
-
-
