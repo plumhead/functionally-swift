@@ -1,6 +1,7 @@
-// Playground - noun: a place where people can play
 
 import UIKit
+
+// Investigations on Protocols and function delegates
 
 
 /*
@@ -28,8 +29,7 @@ class TestClass {
 
 
 var x = TestClass()
-// Nothing will be printed here as we haven't assigned a delegate yet
-x.test()
+x.test() // Nothing will be printed here as we haven't assigned a delegate yet
 // Assign a delegate
 x.delegate = TestController()
 x.test()  // Prints : Controller : Hello World using normal delegates
@@ -40,8 +40,7 @@ x.test()  // Prints : Controller : Hello World using normal delegates
 */
 
 class TestClassFunction {
-    
-    var delegate : (String -> ())?
+    var delegate : (String -> ())?  // an optional function taking a string parameter and returning nothing (void)
     
     func test() {
         delegate?("Hello world as a function delegate")
@@ -52,8 +51,7 @@ class TestClassFunction {
 
 var y = TestClassFunction()
 
-// Print nothing as before as we don't have a delegate yet (but note use of optionals)
-y.test()
+y.test() // Print nothing as before as we don't have a delegate yet (but note use of optionals)
 
 // Lets define our controller class again but without the protocol
 class TestControllerFunction {
@@ -87,9 +85,11 @@ y.test() // Prints - Hello world as a function controller
 */
 
 // Lets suppose we have some requirement for a generic document
+// Loosely based on the rather good example provided by Apple here -> https://developer.apple.com/library/prerelease/ios/samplecode/Lister/Introduction/Intro.html
+
+
 
 class MyDocument<T> {
-    
     var model : T?
     
     func doSomethingWithModel() {
@@ -139,20 +139,21 @@ protocol ModelDelegate4 {
     func modelNotification(model: ModelType)
 }
 
-// Lets update the MyDocument class to incorporate this
-
-class MyDocument2<T> : ModelDelegate4 {
-    
-    var model : T?
-    
+class ModelDelegate4Controller<T> : ModelDelegate4 {
     func modelNotification(model: T) {
         println("Delegate: model is \(model)")
     }
+}
+
+// Lets update the MyDocument class to incorporate this
+class MyDocument2<T> {
+    var model : T?
+    var delegate : ModelDelegate4Controller<T>?
     
     func doSomethingWithModel() {
         // do something with our model object
         if let m = model {
-            modelNotification(m)
+            delegate?.modelNotification(m)
         }
         else {
             println("Model content isn't defined yet")
